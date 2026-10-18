@@ -26,6 +26,8 @@ can_sudo() {
   # failed-sudo reports on a shared machine.
   id -nG | tr ' ' '\n' | grep -qxE 'sudo|wheel|admin' || return 1
   say "asking for your password to run kanata as root..."
+  # Read the password from the terminal even when this script arrives through curl | bash.
+  # shellcheck disable=SC2024
   sudo -v </dev/tty
 }
 
