@@ -1,0 +1,17 @@
+;; Caps Lock: tap = Esc, hold = Ctrl, Caps+H = Backspace.
+;; Same behavior as the keyd config on my Linux machines.
+;; Real Ctrl keys are untouched, so Ctrl+H keeps its normal meaning in each app.
+
+(defcfg process-unmapped-keys yes)
+
+(defsrc caps h)
+
+(defalias
+  ;; Tap within 200 ms for Esc. Holding, or pressing another key while held, gives Ctrl
+  ;; plus the capsl layer.
+  cap (tap-hold-release 200 200 esc (multi lctl (layer-while-held capsl))))
+
+(deflayer base  @cap h)
+
+;; While Caps is held: H drops the Ctrl and sends a plain Backspace.
+(deflayer capsl _    (unmod bspc))

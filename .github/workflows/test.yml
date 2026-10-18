@@ -1,0 +1,88 @@
+name: test
+
+on:
+  push:
+  pull_request:
+
+env:
+  KANATA_VERSION: v1.12.0
+
+jobs:
+  simulate:
+    # Feed scripted key presses through kanata's own engine and compare every output event.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        id: cache
+        with:
+          path: kanata-src/target/release/kanata_simulated_input
+          key: kanata-sim-${{ env.KANATA_VERSION }}
+      - name: Build kanata simulator
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 --branch "$KANATA_VERSION" https://github.com/jtroo/kanata kanata-src
+          cargo build --release --manifest-path kanata-src/Cargo.toml -p kanata-sim
+      - name: Run key tests
+        run: SIM="$PWD/kanata-src/target/release/kanata_simulated_input" tests/run.sh
+
+  check-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scripts pin the published kanata checksums
+        run: |
+          curl -fsSL -o sums "https://github.com/jtroo/kanata/releases/download/$KANATA_VERSION/sha256sums"
+          grep -q "$(grep linux-binaries-x64 sums | cut -d' ' -f1)" linux/run.sh
+          grep -q "$(grep windows-binaries-x64 sums | cut -d' ' -f1)" windows/run.ps1
+          grep -q "KANATA_VERSION=$KANATA_VERSION" linux/run.sh
+          grep -q "'$KANATA_VERSION'" windows/run.ps1
+      - name: Shellcheck
+        run: shellcheck linux/run.sh tests/run.sh
+      - name: Config loads in the real Linux kanata
+        run: |
+          curl -fsSL -o k.zip "https://github.com/jtroo/kanata/releases/download/$KANATA_VERSION/linux-binaries-x64.zip"
+          unzip -q k.zip kanata_linux_x64
+          ./kanata_linux_x64 --cfg kanata.kbd --check
+
+  check-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Script parses
+        shell: pwsh
+        run: |
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile("$PWD\windows\run.ps1", [ref]$null, [ref]$errors) | Out-Null
+          if ($errors) { $errors; exit 1 }
+      - name: Config loads in the real Windows kanata
+        shell: pwsh
+        run: |
+          Invoke-WebRequest "https://github.com/jtroo/kanata/releases/download/$env:KANATA_VERSION/windows-binaries-x64.zip" -OutFile k.zip
+          Expand-Archive k.zip k
+          # Same engine as the tray build that run.ps1 starts, but prints to the console.
+          .\k\kanata_windows_tty_winIOv2_x64.exe --cfg kanata.kbd --check
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+  release:
+    # Tag vN to publish keymap-windows-x64.zip: unzip anywhere, double-click start.bat.
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [simulate, check-linux, check-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build zip
+        run: |
+          curl -fsSL -o k.zip "https://github.com/jtroo/kanata/releases/download/$KANATA_VERSION/windows-binaries-x64.zip"
+          echo "$(grep -oP "KanataZipSha256 = '\K[0-9a-f]+" windows/run.ps1)  k.zip" | sha256sum -c
+          mkdir keymap
+          unzip -q -p k.zip kanata_windows_gui_winIOv2_x64.exe > keymap/kanata.exe
+          curl -fsSL -o keymap/LICENSE-kanata.txt "https://raw.githubusercontent.com/jtroo/kanata/$KANATA_VERSION/LICENSE"
+          cp kanata.kbd windows/run.ps1 windows/start.bat keymap/
+          zip -qr keymap-windows-x64.zip keymap
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" keymap-windows-x64.zip --title "$GITHUB_REF_NAME" --notes "Unzip, then double-click start.bat. Uses kanata $KANATA_VERSION."

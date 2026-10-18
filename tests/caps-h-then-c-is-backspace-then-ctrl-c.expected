@@ -1,0 +1,14 @@
+t:100ms
+out:↓LCtrl
+t:6ms
+out:↑LCtrl
+out:↓BSpace
+t:1ms
+out:↑BSpace
+out:↓LCtrl
+t:43ms
+out:↓C
+t:50ms
+out:↑C
+t:50ms
+out:↑LCtrl
