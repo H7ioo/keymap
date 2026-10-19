@@ -33,8 +33,12 @@ jobs:
       - name: Scripts pin the published kanata checksums
         run: |
           curl -fsSL -o sums "https://github.com/jtroo/kanata/releases/download/$KANATA_VERSION/sha256sums"
-          grep -q "$(grep linux-binaries-x64 sums | cut -d' ' -f1)" linux/run.sh
-          grep -q "$(grep windows-binaries-x64 sums | cut -d' ' -f1)" windows/run.ps1
+          linux=$(grep linux-binaries-x64 sums | cut -d' ' -f1)
+          windows=$(grep windows-binaries-x64 sums | cut -d' ' -f1)
+          # An empty hash would make the grep below match anything.
+          [[ ${#linux} -eq 64 && ${#windows} -eq 64 ]]
+          grep -q "$linux" linux/run.sh
+          grep -q "$windows" windows/run.ps1
           grep -q "KANATA_VERSION=$KANATA_VERSION" linux/run.sh
           grep -q "'$KANATA_VERSION'" windows/run.ps1
       - name: Shellcheck

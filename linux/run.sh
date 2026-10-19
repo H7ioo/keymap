@@ -110,11 +110,18 @@ print(opts)' "$1" "$FALLBACK_OPTION")
 }
 
 if [[ ${1:-} == --undo ]]; then
-  if [[ $(id -u) -eq 0 ]] || sudo -n true 2>/dev/null; then
-    as_root pkill -f "$CACHE/kanata-" || true
+  if pgrep -f "$CACHE/kanata-" >/dev/null; then
+    # kanata runs as root, possibly from another terminal, so this may ask for a password.
+    if as_root pkill -f "$CACHE/kanata-" </dev/tty; then
+      say "stopped kanata."
+    else
+      say "could not stop kanata; press Left Ctrl + Space + Esc, or Ctrl+C in its terminal."
+    fi
   fi
-  fallback off 2>/dev/null || true
-  say "keyboard back to normal."
+  if (fallback off) 2>/dev/null; then
+    say "removed the Caps = Ctrl fallback."
+  fi
+  say "done."
 elif can_sudo; then
   run_kanata
 else

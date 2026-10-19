@@ -1,12 +1,12 @@
-t:100ms
+t:50ms
 out:↓LCtrl
 t:6ms
 out:↑LCtrl
 out:↓BSpace
-t:1ms
+t:44ms
 out:↑BSpace
 out:↓LCtrl
-t:43ms
+t:50ms
 out:↓C
 t:50ms
 out:↑C

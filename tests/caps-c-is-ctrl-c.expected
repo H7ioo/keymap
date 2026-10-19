@@ -1,8 +1,8 @@
-t:100ms
+t:50ms
 out:↓LCtrl
 t:6ms
 out:↓C
-t:1ms
+t:44ms
 out:↑C
-t:43ms
+t:50ms
 out:↑LCtrl

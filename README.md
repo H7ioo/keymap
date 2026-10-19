@@ -15,7 +15,7 @@ It works on any Windows or Linux PC from one download, with no installer, and on
 | Left `Ctrl` + `Space` + `Esc` | Quit the layout | Emergency stop, keyboard back to normal |
 
 A tap is a press shorter than 200 ms with no other key in between. Anything longer, or with
-another key pressed, counts as a hold.
+another key pressed while Caps is down, counts as a hold (so a fast Caps+H roll is still Backspace).
 
 ### Linux without sudo
 
@@ -41,6 +41,9 @@ irm https://raw.githubusercontent.com/H7ioo/keymap/main/windows/run.ps1 | iex
 ```
 
 A kanata icon appears in the tray while it runs.
+
+Without admin rights, Windows doesn't let kanata remap keys inside windows that run as admin
+(Task Manager, UAC prompts, admin terminals). Caps Lock acts normally there.
 
 | To | Do |
 |---|---|
